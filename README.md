@@ -1,6 +1,6 @@
 # better-auth-playwright-zerodrop
 
-[![E2E Tests](https://github.com/zerodrop-dev/better-auth-playwright-zerodrop/actions/workflows/test.yml/badge.svg)](https://github.com/zerodrop-dev/better-auth-playwright-zerodrop/actions/workflows/test.yml)
+[![CI](https://github.com/zerodrop-dev/better-auth-playwright-zerodrop/actions/workflows/test.yml/badge.svg)](https://github.com/zerodrop-dev/better-auth-playwright-zerodrop/actions/workflows/test.yml)
 [![zerodrop-client](https://img.shields.io/npm/v/zerodrop-client.svg?label=zerodrop-client)](https://www.npmjs.com/package/zerodrop-client)
 [![better-auth](https://img.shields.io/npm/v/better-auth.svg?label=better-auth)](https://www.npmjs.com/package/better-auth)
 
