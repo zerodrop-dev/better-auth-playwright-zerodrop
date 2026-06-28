@@ -1,0 +1,29 @@
+{
+  "name": "better-auth-playwright-zerodrop",
+  "version": "1.0.0",
+  "description": "Testing Better Auth email flows with Playwright and ZeroDrop — email verification, magic links, OTP, password reset",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "test": "playwright test",
+    "test:ui": "playwright test --ui"
+  },
+  "dependencies": {
+    "better-auth": "^1.0.0",
+    "next": "^15.0.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "resend": "^4.0.0",
+    "@prisma/client": "^6.0.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.45.0",
+    "zerodrop-client": "^0.2.2",
+    "prisma": "^6.0.0",
+    "typescript": "^5.0.0",
+    "@types/node": "^20.0.0",
+    "@types/react": "^19.0.0"
+  }
+}
