@@ -1,5 +1,10 @@
 import { defineConfig, devices } from "@playwright/test";
 
+// Load .env when there is one (Node 20.12 or later); CI sets the variables itself.
+try {
+  process.loadEnvFile();
+} catch {}
+
 export default defineConfig({
   testDir: "./tests",
   fullyParallel: true,

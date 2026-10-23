@@ -22,10 +22,10 @@ test("email verification on signup", async ({ page }) => {
   await page.fill('[name="password"]', "TestPassword123!");
   await page.click('[type="submit"]');
 
-  // Better Auth redirects to "check your email" page
+  // The sign-up page asks the user to check their email
   await expect(page.locator("text=Check your email")).toBeVisible();
 
-  // Wait for the verification email — ZeroDrop catches it in <1s
+  // Wait for the verification email
   const email = await mail.waitForLatest(inbox, {
     timeout: 15000,
     filter: { subject: "Verify" },

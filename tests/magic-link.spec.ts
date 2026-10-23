@@ -18,6 +18,7 @@ test("magic link sign-in", async ({ page }) => {
 
   // Request a magic link
   await page.goto("/login");
+  await page.click('button:has-text("Use magic link")');
   await page.fill('[name="email"]', inbox);
   await page.click('button:has-text("Send magic link")');
 
@@ -26,7 +27,7 @@ test("magic link sign-in", async ({ page }) => {
     page.locator("text=Magic link sent")
   ).toBeVisible();
 
-  // Wait for the email — ZeroDrop catches it in <1s
+  // Wait for the email
   const email = await mail.waitForLatest(inbox, {
     timeout: 15000,
     filter: { subject: "magic link" },
@@ -50,6 +51,7 @@ test("magic link is single-use", async ({ page, context }) => {
   const inbox = mail.generateInbox();
 
   await page.goto("/login");
+  await page.click('button:has-text("Use magic link")');
   await page.fill('[name="email"]', inbox);
   await page.click('button:has-text("Send magic link")');
 
@@ -60,8 +62,8 @@ test("magic link is single-use", async ({ page, context }) => {
   await page.goto(magicLink);
   await expect(page).toHaveURL("/dashboard");
 
-  // Second use — should fail
+  // Second use — should fail: Better Auth redirects with error=INVALID_TOKEN
   const page2 = await context.newPage();
   await page2.goto(magicLink);
-  await expect(page2.locator(".error-message")).toBeVisible();
+  await expect(page2).toHaveURL(/error=INVALID_TOKEN/);
 });

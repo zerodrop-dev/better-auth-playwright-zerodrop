@@ -20,7 +20,7 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.45.0",
-    "zerodrop-client": "^0.2.2",
+    "zerodrop-client": "^0.4.0",
     "prisma": "^6.0.0",
     "typescript": "^5.0.0",
     "@types/node": "^20.0.0",

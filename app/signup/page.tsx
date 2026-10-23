@@ -17,6 +17,8 @@ export default function SignUpPage() {
       email,
       password,
       name: email.split("@")[0],
+      // Where the verification link lands; Better Auth's default is "/"
+      callbackURL: "/dashboard",
     });
     if (error) {
       setError(error.message || "Sign up failed");

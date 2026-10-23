@@ -10,6 +10,7 @@ test("email OTP sign-in", async ({ page }) => {
   const inbox = mail.generateInbox();
 
   await page.goto("/login");
+  await page.click('button:has-text("Use one-time code")');
   await page.fill('[name="email"]', inbox);
   await page.click('button:has-text("Send code")');
 
@@ -33,8 +34,12 @@ test("email OTP sign-in", async ({ page }) => {
 
 /**
  * Test: Better Auth email OTP for email verification
+ *
+ * Not runnable against this app yet: sign-up sends a verification link, not
+ * a code (that needs emailOTP's sendVerificationOnSignUp option), and the
+ * sign-up page has no field to enter a code.
  */
-test("email OTP verification on signup", async ({ page }) => {
+test.fixme("email OTP verification on signup", async ({ page }) => {
   const inbox = mail.generateInbox();
 
   await page.goto("/signup");
@@ -60,10 +65,11 @@ test("email OTP verification on signup", async ({ page }) => {
 /**
  * Test: OTP is single-use
  */
-test("OTP is single-use", async ({ page }) => {
+test("OTP is single-use", async ({ page, baseURL }) => {
   const inbox = mail.generateInbox();
 
   await page.goto("/login");
+  await page.click('button:has-text("Use one-time code")');
   await page.fill('[name="email"]', inbox);
   await page.click('button:has-text("Send code")');
 
@@ -75,13 +81,14 @@ test("OTP is single-use", async ({ page }) => {
   await page.click('[type="submit"]');
   await expect(page).toHaveURL("/dashboard");
 
-  // Log out then try same OTP again
-  await page.goto("/logout");
-  await page.goto("/login");
-  await page.fill('[name="email"]', inbox);
-  await page.fill('[name="otp"]', otp);
-  await page.click('[type="submit"]');
+  // Try the same OTP again. The login page shows a code field only after
+  // sending a new code, so call Better Auth's sign-in endpoint directly.
+  const reuse = await page.request.post("/api/auth/sign-in/email-otp", {
+    headers: { origin: baseURL! }, // Better Auth's CSRF check wants one
+    data: { email: inbox, otp },
+  });
 
   // Should fail — OTP already consumed
-  await expect(page.locator(".error-message")).toBeVisible();
+  expect(reuse.status()).toBe(400);
+  expect(await reuse.json()).toMatchObject({ code: "INVALID_OTP" });
 });

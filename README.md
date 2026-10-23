@@ -12,8 +12,9 @@ Covers all four email flows Better Auth supports — end to end, in CI, with rea
 git clone https://github.com/zerodrop-dev/better-auth-playwright-zerodrop
 cd better-auth-playwright-zerodrop
 pnpm install
-cp .env.example .env   # add BETTER_AUTH_SECRET + RESEND_API_KEY
+cp .env.example .env   # add BETTER_AUTH_SECRET, RESEND_API_KEY, RESEND_FROM and ZERODROP_API_KEY
 pnpm prisma migrate dev
+pnpm exec playwright install chromium
 pnpm test
 ```
 
@@ -31,6 +32,8 @@ pnpm test
 Better Auth sends real emails via Resend. ZeroDrop catches them at Cloudflare's edge and auto-extracts OTPs and magic links before your test reads them.
 
 ```typescript
+const mail = new ZeroDrop(); // reads ZERODROP_API_KEY
+
 // Generate a unique inbox per test — no network request
 const inbox = mail.generateInbox();
 
@@ -38,7 +41,7 @@ const inbox = mail.generateInbox();
 await page.fill('[name="email"]', inbox);
 await page.click('[type="submit"]');
 
-// ZeroDrop catches the email in <1s
+// ZeroDrop catches the email
 const email = await mail.waitForLatest(inbox, { timeout: 15000 });
 
 email.otp        // "847291" — auto-extracted, no regex
@@ -93,6 +96,7 @@ better-auth-playwright-zerodrop/
 git clone https://github.com/zerodrop-dev/better-auth-playwright-zerodrop
 cd better-auth-playwright-zerodrop
 pnpm install
+pnpm exec playwright install chromium
 ```
 
 **2. Configure environment**
@@ -105,7 +109,13 @@ cp .env.example .env
 |---|---|
 | `BETTER_AUTH_SECRET` | `openssl rand -base64 32` |
 | `RESEND_API_KEY` | [resend.com](https://resend.com) → API Keys |
+| `RESEND_FROM` | An address on a domain you've verified at [resend.com/domains](https://resend.com/domains), such as `Auth <auth@yourdomain.com>` |
+| `ZERODROP_API_KEY` | A free key from [zerodrop.dev/keys](https://zerodrop.dev/keys) (sign in with GitHub) |
 | `DATABASE_URL` | `file:./dev.db` (SQLite, already set) |
+
+Resend's shared `onboarding@resend.dev` only sends to your own Resend account's address, so it can't reach a ZeroDrop inbox: `RESEND_FROM` has to be on your own verified domain.
+
+Set `ZERODROP_API_KEY`: a full run uses 7 inboxes (one per test that runs), and without an API key one sender can reach only 5 different inboxes a day. Past that, ZeroDrop holds the email and the test fails with a `ZeroDropHeldError`. With a key, inbox names start with your key's prefix, only your key can read them, and they aren't limited.
 
 **3. Set up the database**
 
@@ -127,17 +137,19 @@ pnpm test
 
 ## GitHub Actions CI
 
-No Docker. No SMTP service. ZeroDrop works out of the box.
+No Docker. No SMTP service. Store your free ZeroDrop key as the `ZERODROP_API_KEY` repository secret: a run uses more inboxes than the 5 a day one sender can reach without a key.
 
 ```yaml
 - uses: actions/checkout@v4
 - run: pnpm install
-- run: pnpm prisma migrate deploy
+- run: pnpm prisma db push
 - run: pnpm exec playwright install --with-deps chromium
 - run: pnpm test
 env:
   BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
   RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+  RESEND_FROM: Auth <auth@yourdomain.com>
+  ZERODROP_API_KEY: ${{ secrets.ZERODROP_API_KEY }}
   DATABASE_URL: file:./test.db
 ```
 
@@ -155,7 +167,7 @@ The common workarounds:
 
 ZeroDrop gives each test a real isolated inbox. OTPs and magic links are extracted at Cloudflare's edge — your test just reads `email.otp` or `email.magicLink`.
 
-Free, no signup required → [zerodrop.dev](https://zerodrop.dev)
+Free, no signup to try → [zerodrop.dev](https://zerodrop.dev). A full run of this suite needs a free API key → [zerodrop.dev/keys](https://zerodrop.dev/keys)
 
 ## Related
 

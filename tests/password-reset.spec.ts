@@ -75,21 +75,33 @@ test("password reset via email link", async ({ page }) => {
 test("reset link is single-use", async ({ page, context }) => {
   const inbox = mail.generateInbox();
 
+  // Create an account first: Better Auth sends no reset email to an unknown address
+  await page.goto("/signup");
+  await page.fill('[name="email"]', inbox);
+  await page.fill('[name="password"]', "OldPassword123!");
+  await page.click('[type="submit"]');
+  await expect(page.locator("text=Check your email")).toBeVisible();
+
   await page.goto("/forgot-password");
   await page.fill('[name="email"]', inbox);
   await page.click('[type="submit"]');
 
-  const email = await mail.waitForLatest(inbox, { timeout: 15000 });
+  // The inbox also has the verification email from sign-up
+  const email = await mail.waitForLatest(inbox, {
+    timeout: 15000,
+    filter: { subject: "Reset" },
+  });
   const resetLink = email.magicLink!;
 
   // First use — should show reset form
   await page.goto(resetLink);
   await page.fill('[name="password"]', "NewPassword123!");
+  await page.fill('[name="confirmPassword"]', "NewPassword123!");
   await page.click('[type="submit"]');
   await expect(page.locator("text=Password updated")).toBeVisible();
 
-  // Second use — should show error
+  // Second use — should fail: Better Auth redirects with error=INVALID_TOKEN
   const page2 = await context.newPage();
   await page2.goto(resetLink);
-  await expect(page2.locator(".error-message")).toBeVisible();
+  await expect(page2).toHaveURL(/error=INVALID_TOKEN/);
 });

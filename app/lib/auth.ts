@@ -8,6 +8,25 @@ import { Resend } from "resend";
 const prisma = new PrismaClient();
 const resend = new Resend(process.env.RESEND_API_KEY);
 
+// Resend sends only from a domain you've verified in your Resend account
+// (https://resend.com/domains). Its shared onboarding@resend.dev sends only to
+// your own address, so it can't reach a ZeroDrop inbox.
+function sendEmail(to: string, subject: string, text: string) {
+  const from = process.env.RESEND_FROM;
+  if (!from) {
+    throw new Error(
+      'RESEND_FROM is not set. Set it to an address on a domain you verified in Resend, e.g. "Auth <auth@yourdomain.com>".'
+    );
+  }
+  // resend.emails.send() returns most failures in `error` instead of
+  // throwing, and the callers below don't await it, so log them here.
+  return resend.emails.send({ from, to, subject, text }).then(({ error }) => {
+    if (error) console.error(`Resend couldn't send "${subject}" to ${to}: ${error.message}`);
+  });
+}
+
+// The sends below aren't awaited, as Better Auth recommends: waiting for them
+// would let response times show whether an account exists.
 export const auth = betterAuth({
   database: prismaAdapter(prisma, {
     provider: "sqlite", // use postgres/mysql in production
@@ -18,12 +37,7 @@ export const auth = betterAuth({
 
     // Password reset via magic link
     sendResetPassword: async ({ user, url }) => {
-      void resend.emails.send({
-        from: "noreply@yourdomain.com",
-        to: user.email,
-        subject: "Reset your password",
-        text: `Click the link to reset your password: ${url}`,
-      });
+      void sendEmail(user.email, "Reset your password", `Click the link to reset your password: ${url}`);
     },
   },
 
@@ -31,12 +45,7 @@ export const auth = betterAuth({
   emailVerification: {
     sendOnSignUp: true,
     sendVerificationEmail: async ({ user, url }) => {
-      void resend.emails.send({
-        from: "noreply@yourdomain.com",
-        to: user.email,
-        subject: "Verify your email",
-        text: `Click the link to verify your email: ${url}`,
-      });
+      void sendEmail(user.email, "Verify your email", `Click the link to verify your email: ${url}`);
     },
   },
 
@@ -44,12 +53,7 @@ export const auth = betterAuth({
     // Magic link passwordless login
     magicLink({
       sendMagicLink: async ({ email, url }) => {
-        void resend.emails.send({
-          from: "noreply@yourdomain.com",
-          to: email,
-          subject: "Your magic link",
-          text: `Click the link to sign in: ${url}`,
-        });
+        void sendEmail(email, "Your magic link", `Click the link to sign in: ${url}`);
       },
     }),
 
@@ -61,12 +65,7 @@ export const auth = betterAuth({
           "email-verification": "Verify your email",
           "forget-password": "Reset your password",
         };
-        void resend.emails.send({
-          from: "noreply@yourdomain.com",
-          to: email,
-          subject: subjects[type] || "Your verification code",
-          text: `Your code is: ${otp}`,
-        });
+        void sendEmail(email, subjects[type] || "Your verification code", `Your code is: ${otp}`);
       },
     }),
   ],
